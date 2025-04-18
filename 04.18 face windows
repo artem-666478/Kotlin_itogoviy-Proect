@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/purple_200"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Конвертер валют"
+        android:textSize="24sp"
+        android:textColor="@color/white"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="40dp"
+        android:layout_marginBottom="60dp"/>
+
+    <EditText
+        android:id="@+id/amountInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Введите сумму"
+        android:inputType="numberDecimal"
+        android:textSize="18sp"
+        android:layout_marginBottom="20dp"/>
+
+    <Spinner
+        android:id="@+id/fromCurrencySpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"/>
+
+    <Spinner
+        android:id="@+id/toCurrencySpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="30dp"/>
+
+    <Button
+        android:id="@+id/convertButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Конвертировать"
+        android:textSize="18sp"
+        android:backgroundTint="@color/purple_500"/>
+
+    <TextView
+        android:id="@+id/resultText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:textColor="@color/white"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="30dp"/>
+
+</LinearLayout>
+
+******************************************************************************
+
+import android.os.Bundle
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.EditText
+import android.widget.Spinner
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var fromCurrencySpinner: Spinner
+    private lateinit var toCurrencySpinner: Spinner
+    private lateinit var amountInput: EditText
+    private lateinit var convertButton: Button
+    private lateinit var resultText: TextView
+
+    private val currencies = arrayOf("USD", "EUR", "RUB", "GBP", "JPY")
+    private val exchangeRates = mapOf(
+        "USD" to 1.0,
+        "EUR" to 0.85,
+        "RUB" to 75.0,
+        "GBP" to 0.75,
+        "JPY" to 110.0
+    )
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        // Инициализация элементов интерфейса
+        fromCurrencySpinner = findViewById(R.id.fromCurrencySpinner)
+        toCurrencySpinner = findViewById(R.id.toCurrencySpinner)
+        amountInput = findViewById(R.id.amountInput)
+        convertButton = findViewById(R.id.convertButton)
+        resultText = findViewById(R.id.resultText)
+
+        // Настройка спиннеров
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, currencies)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        
+        fromCurrencySpinner.adapter = adapter
+        toCurrencySpinner.adapter = adapter
+
+        // Установка начальных значений
+        fromCurrencySpinner.setSelection(0)
+        toCurrencySpinner.setSelection(1)
+
+        // Обработчик нажатия кнопки
+        convertButton.setOnClickListener {
+            convertCurrency()
+        }
+    }
+
+    private fun convertCurrency() {
+        val amountString = amountInput.text.toString()
+        if (amountString.isEmpty()) {
+            Toast.makeText(this, "Введите сумму", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val amount = amountString.toDouble()
+        val fromCurrency = fromCurrencySpinner.selectedItem.toString()
+        val toCurrency = toCurrencySpinner.selectedItem.toString()
+
+        val rateFrom = exchangeRates[fromCurrency] ?: 1.0
+        val rateTo = exchangeRates[toCurrency] ?: 1.0
+        val result = amount * (rateTo / rateFrom)
+
+        resultText.text = "%.2f %s = %.2f %s".format(amount, fromCurrency, result, toCurrency)
+    }
+}
