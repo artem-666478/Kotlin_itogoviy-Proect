@@ -2,7 +2,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 
-// Модель данных
 data class Post(
     val userId: Int,
     val id: Int,
@@ -10,13 +9,12 @@ data class Post(
     val body: String
 )
 
-// Интерфейс API
 interface ApiService {
     @GET("posts/1")
     suspend fun getPost(): Post
     
     companion object {
-        private const val BASE_URL = "https://jsonplaceholder.typicode.com/"
+        private const val BASE_URL = "API ключ"
         
         fun create(): ApiService {
             val retrofit = Retrofit.Builder()
