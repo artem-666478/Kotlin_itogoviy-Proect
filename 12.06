@@ -1,0 +1,35 @@
+class ContactRepository {
+    private val contacts = mutableListOf<Contact>()
+    private var nextId = 1
+
+    fun getAll(): List<Contact> = contacts.toList()
+
+    fun getById(id: Int): Contact? = contacts.find { it.id == id }
+
+    fun add(contactRequest: ContactRequest): Contact {
+        val contact = Contact(
+            id = nextId++,
+            name = contactRequest.name,
+            email = contactRequest.email
+        )
+        contacts.add(contact)
+        return contact
+    }
+
+    fun update(id: Int, contactRequest: ContactRequest): Contact? {
+        val index = contacts.indexOfFirst { it.id == id }
+        return if (index != -1) {
+            val updated = Contact(
+                id = id,
+                name = contactRequest.name,
+                email = contactRequest.email
+            )
+            contacts[index] = updated
+            updated
+        } else {
+            null
+        }
+    }
+
+    fun delete(id: Int): Boolean = contacts.removeIf { it.id == id }
+}
