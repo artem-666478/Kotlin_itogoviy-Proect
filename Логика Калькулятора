@@ -1,0 +1,189 @@
+import android.os.Bundle
+import android.widget.Button
+import android.widget.EditText
+import androidx.appcompat.app.AppCompatActivity
+
+class MainActivity : AppCompatActivity() {
+    private lateinit var tvInput: EditText
+    private var lastNumeric = false
+    private var lastDot = false
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        tvInput = findViewById(R.id.tvInput)
+
+        findViewById<Button>(R.id.btn0).setOnClickListener { appendText("0") }
+        findViewById<Button>(R.id.btn1).setOnClickListener { appendText("1") }
+        findViewById<Button>(R.id.btn2).setOnClickListener { appendText("2") }
+        findViewById<Button>(R.id.btn3).setOnClickListener { appendText("3") }
+        findViewById<Button>(R.id.btn4).setOnClickListener { appendText("4") }
+        findViewById<Button>(R.id.btn5).setOnClickListener { appendText("5") }
+        findViewById<Button>(R.id.btn6).setOnClickListener { appendText("6") }
+        findViewById<Button>(R.id.btn7).setOnClickListener { appendText("7") }
+        findViewById<Button>(R.id.btn8).setOnClickListener { appendText("8") }
+        findViewById<Button>(R.id.btn9).setOnClickListener { appendText("9") }
+        findViewById<Button>(R.id.btnDot).setOnClickListener { appendDot() }
+
+        findViewById<Button>(R.id.btnAdd).setOnClickListener { appendOperator("+") }
+        findViewById<Button>(R.id.btnSubtract).setOnClickListener { appendOperator("-") }
+        findViewById<Button>(R.id.btnMultiply).setOnClickListener { appendOperator("*") }
+        findViewById<Button>(R.id.btnDivide).setOnClickListener { appendOperator("/") }
+        findViewById<Button>(R.id.btnPercent).setOnClickListener { appendOperator("%") }
+        findViewById<Button>(R.id.btnBracket).setOnClickListener { appendBracket() }
+
+        findViewById<Button>(R.id.btnClear).setOnClickListener { clearAll() }
+
+        findViewById<Button>(R.id.btnEquals).setOnClickListener { calculate() }
+    }
+
+    private fun appendText(value: String) {
+        if (tvInput.text.toString() == "0") {
+            tvInput.text = value
+        } else {
+            tvInput.append(value)
+        }
+        lastNumeric = true
+    }
+
+    private fun appendDot() {
+        if (lastNumeric && !lastDot) {
+            tvInput.append(".")
+            lastNumeric = false
+            lastDot = true
+        }
+    }
+
+    private fun appendOperator(operator: String) {
+        if (lastNumeric && !isOperatorAdded(tvInput.text.toString())) {
+            tvInput.append(operator)
+            lastNumeric = false
+            lastDot = false
+        }
+    }
+
+    private fun appendBracket() {
+        val text = tvInput.text.toString()
+        val openBrackets = text.count { it == '(' }
+        val closeBrackets = text.count { it == ')' }
+
+        if (text.isEmpty() || isOperatorAdded(text) || openBrackets > closeBrackets) {
+            tvInput.append("(")
+        } else {
+            tvInput.append(")")
+        }
+    }
+
+    private fun isOperatorAdded(value: String): Boolean {
+        return if (value.startsWith("-")) {
+            false
+        } else {
+            value.contains("+") || value.contains("-") || 
+            value.contains("*") || value.contains("/") || 
+            value.contains("%")
+        }
+    }
+
+    private fun clearAll() {
+        tvInput.text = "0"
+        lastNumeric = false
+        lastDot = false
+    }
+
+    private fun calculate() {
+        if (lastNumeric) {
+            var text = tvInput.text.toString()
+            try {
+                text = text.replace("×", "*").replace("÷", "/")
+
+                if (text.contains("%")) {
+                    val parts = text.split("%")
+                    if (parts.size == 2) {
+                        val number = parts[0].toDouble()
+                        val percent = parts[1].toDouble()
+                        val result = number * percent / 100
+                        tvInput.text = result.toString()
+                        return
+                    }
+                }
+
+                val result = eval(text)
+                tvInput.text = result.toString()
+                lastDot = result.toString().contains(".")
+            } catch (e: Exception) {
+                tvInput.text = "Ошибка"
+            }
+        }
+    }
+
+    private fun eval(str: String): Double {
+        return object : Any() {
+            var pos = -1
+            var ch = 0
+            
+            fun nextChar() {
+                ch = if (++pos < str.length) str[pos].toInt() else -1
+            }
+            
+            fun eat(charToEat: Int): Boolean {
+                while (ch == ' '.toInt()) nextChar()
+                if (ch == charToEat) {
+                    nextChar()
+                    return true
+                }
+                return false
+            }
+            
+            fun parse(): Double {
+                nextChar()
+                val x = parseExpression()
+                if (pos < str.length) throw RuntimeException("Ошибка: неожиданный символ: " + ch.toChar())
+                return x
+            }
+            
+            fun parseExpression(): Double {
+                var x = parseTerm()
+                while (true) {
+                    when {
+                        eat('+'.toInt()) -> x += parseTerm()
+                        eat('-'.toInt()) -> x -= parseTerm()
+                        else -> return x
+                    }
+                }
+            }
+            
+            fun parseTerm(): Double {
+                var x = parseFactor()
+                while (true) {
+                    when {
+                        eat('*'.toInt()) -> x *= parseFactor()
+                        eat('/'.toInt()) -> x /= parseFactor()
+                        else -> return x
+                    }
+                }
+            }
+            
+            fun parseFactor(): Double {
+                if (eat('+'.toInt())) return parseFactor()
+                if (eat('-'.toInt())) return -parseFactor()
+                
+                var x: Double
+                val startPos = pos
+                if (eat('('.toInt())) {
+                    x = parseExpression()
+                    eat(')'.toInt())
+                } else if (ch >= '0'.toInt() && ch <= '9'.toInt() || ch == '.'.toInt()) {
+                    while (ch >= '0'.toInt() && ch <= '9'.toInt() || ch == '.'.toInt()) nextChar()
+                    x = str.substring(startPos, pos).toDouble()
+                } else {
+                    throw RuntimeException("Ошибка: неожиданный символ: " + ch.toChar())
+                }
+                
+                if (eat('^'.toInt())) x = Math.pow(x, parseFactor())
+                
+                return x
+            }
+        }.parse()
+    }
+}
